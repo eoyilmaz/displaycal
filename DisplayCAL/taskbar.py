@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 
-import comtypes.gen.TaskbarLib as tbl
+# import comtypes.gen.TaskbarLib as tbl
 import comtypes.client as cc
+cc.GetModule("TaskbarLib.tlb")
+import comtypes.gen.TaskbarLib as tbl
 
 
 TBPF_NOPROGRESS = 0

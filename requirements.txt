@@ -8,5 +8,6 @@ Pillow
 PyChromecast
 pywin32; sys_platform=='win32'
 Send2Trash
+wmi; platform_system=='win32'
 wxPython>=4.2.2
 zeroconf
