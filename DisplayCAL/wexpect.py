@@ -64,21 +64,16 @@ http://pexpect.sourceforge.net/
 $Id: pexpect.py 507 2007-12-27 02:40:52Z noah $
 """
 
-import copy
 import errno
-import logging
 import re
 import os
 import select
 import signal
 import string
 import struct
-import subprocess
 import sys
-import tempfile
 import time
 import traceback
-import types
 
 if sys.platform != "win32":
     import pty
@@ -854,6 +849,7 @@ class spawn_unix(object):
         False.
 
         """
+        end_time = -1
         if timeout == -1:
             timeout = self.timeout
         if timeout is not None:
@@ -905,7 +901,6 @@ class spawn_unix(object):
             p.expect (['abcd'])
             p.expect (['wxyz'])
         """
-        self.child_fd
         attr = termios.tcgetattr(self.child_fd)
         if state:
             attr[3] = attr[3] | termios.ECHO
@@ -1377,7 +1372,7 @@ class spawn_unix(object):
 
     def expect(self, pattern, timeout=-1, searchwindowsize=None):
         """Seek through the stream until a pattern is matched.
-        
+
         The pattern is overloaded and may take several types. The pattern can be a
         StringType, EOF, a compiled re, or a list of any of those types. Strings will be
         compiled to re types.
@@ -2158,25 +2153,26 @@ class Wtty(object):
         # as the packed executable.
         # py2exe: The python executable can be included via setup script by
         # adding it to 'data_files'
-        commandLine = '"%s" %s "%s"' % (
+        command_line = '"{}" {} "{}"'.format(
             (
                 os.path.join(dirname, "python.exe")
                 if getattr(sys, "frozen", False)
                 else os.path.join(os.path.dirname(sys.executable), "python.exe")
             ),
             " ".join(pyargs),
-            "import sys;%ssys.path = %s + sys.path;"
-            "args = %s; from DisplayCAL import wexpect;"
-            "wexpect.ConsoleReader(wexpect.join_args(args), %i, %i, cp=%s, c=%s, r=%s, logdir=%r)"
-            % (
+            "import sys;{}sys.path = {} + sys.path;"
+            "args = {}; from DisplayCAL import wexpect;"
+            "wexpect.ConsoleReader("
+            "wexpect.join_args(args), {:d}, {:d}, cp={}, c={}, r={}, logdir={!r}"
+            ")".format(
                 # this fixes running Argyll commands through py2exe frozen python
                 (
-                    "setattr(sys, 'frozen', '%s'); ".format(getattr(sys, "frozen"))
+                    "setattr(sys, 'frozen', '{}'); ".format(getattr(sys, "frozen"))
                     if hasattr(sys, "frozen")
                     else ""
                 ),
-                ("%r" % spath).replace('"', r"\""),
-                ("%r" % args).replace('"', r"\""),
+                ("{!r}".format(spath)).replace('"', r"\""),
+                ("{!r}".format(args)).replace('"', r"\""),
                 pid,
                 tid,
                 self.codepage,
@@ -2186,9 +2182,9 @@ class Wtty(object):
             ),
         )
 
-        log(commandLine)
+        log(command_line)
         self.__oproc, _, self.conpid, self.__otid = CreateProcess(
-            None, commandLine, None, None, False, CREATE_NEW_CONSOLE, env, self.cwd, si
+            None, command_line, None, None, False, CREATE_NEW_CONSOLE, env, self.cwd, si
         )
 
     def switchTo(self, attached=True):
@@ -2979,7 +2975,7 @@ def log(e, suffix="", logdir=None):
                     # http://bugs.python.org/issue1760357
                     # To overcome this problem, we ignore the real modification
                     # date and force a rollover
-                    mtime = time.localtime(time() - 60 * 60 * 24)
+                    mtime = time.localtime(time.time() - 60 * 60 * 24)
                 if time.localtime()[:3] > mtime[:3]:
                     # do rollover
                     try:
@@ -3038,14 +3034,14 @@ def which(filename):
 def join_args(args):
     """Joins arguments into a command line. It quotes all arguments that contain
     spaces or any of the characters ^!$%&()[]{}=;'+,`~"""
-    commandline = []
+    command_line = []
     for arg in args:
         if isinstance(arg, bytes):
             arg = arg.decode()
         if re.search(r"[^!$%&()[]{}=;'+,`~\s]", arg):
             arg = '"%s"' % arg
-        commandline.append(arg)
-    return " ".join(commandline)
+        command_line.append(arg)
+    return " ".join(command_line)
 
 
 def split_command_line(command_line):
