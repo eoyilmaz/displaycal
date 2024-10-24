@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
+
 import os
 import pathlib
 import shutil
 import subprocess
 import sys
 import tarfile
-
-import pytest
 import tempfile
 
 import DisplayCAL
@@ -14,10 +13,12 @@ from DisplayCAL import RealDisplaySizeMM
 from DisplayCAL.config import setcfg
 from DisplayCAL.argyll import get_argyll_latest_version
 
+import pytest
+
 
 @pytest.fixture(scope="module")
 def data_files():
-    """generates data file list"""
+    """Generate data file list."""
     #  test/data
     extensions = ["*.txt", "*.tsv", "*.lin", "*.cal", "*.ti1", "*.ti3", "*.icc"]
 

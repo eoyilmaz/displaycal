@@ -26,7 +26,7 @@ def _mp_call(
     method: str,
     return_value: Any,
     as_property: bool,
-) -> CallList:
+) -> Generator[CallList, None, None]:
     ...
 
 
@@ -37,22 +37,22 @@ def _mp_call(
     mock_class: str,
     method: Any,  # return value in this case
     return_value: bool,  # as_property in this case
-) -> CallList:
+) -> Generator[CallList, None, None]:
     ...
 
 
+@contextlib.contextmanager
 def _mp_call(
     monkeypatch: MonkeyPatch,
     mock_class: Type[Any] | ModuleType | str,
     method: str | Any,
     return_value: Any,
     as_property: bool = False,
-) -> CallList:
-    """
-    Mock a method in a class and record the calls to it.
+) -> Generator[CallList, None, None]:
+    """Mock a method in a class and record the calls to it.
 
-    If the given return_value is an Exception, it will be raised. If not, the
-    value will be returned from the mocked function/method.
+    If the given return_value is an Exception, it will be raised.
+    If not, the value will be returned from the mocked function/method.
     """
     calls: CallList = []
 
@@ -69,9 +69,7 @@ def _mp_call(
 
     # first case handles class + method, second one mock as str
     if as_property or (isinstance(mock_class, str) and return_value):
-        callback: Callable[[VarArg(Any), KwArg(Any)], Any] | property = property(
-            func_call
-        )
+        callback = property(func_call)
     else:
         callback = func_call
 
@@ -80,7 +78,10 @@ def _mp_call(
         monkeypatch.setattr(mock_class, callback)
     else:
         monkeypatch.setattr(mock_class, method, callback)
-    return calls
+    try:
+        yield calls
+    finally:
+        monkeypatch.undo()
 
 
 @contextlib.contextmanager
